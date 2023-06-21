@@ -1,0 +1,102 @@
+---
+title: "Classification Prediction Problem"
+subtitle: "Data Science 3 with R (STAT 301-3)"
+author: "Alani Cox-Caceres"
+
+format:
+  html:
+    toc: true
+    embed-resources: true
+    code-fold: show
+    link-external-newwindow: true
+    echo: false
+    
+execute:
+  warning: false
+  message: false
+
+from: markdown+emoji 
+---
+
+## Github Repository
+[https://github.com/STAT301-3-2023SP/prediction-classification-alanicc](https://github.com/STAT301-3-2023SP/prediction-classification-alanicc)
+
+# Data Overview
+This dataset came from Kaggle as a sample set to use for the competition. The training data contained 767 variables with 5,500 entried. The testing data contained 766 with 4,500 entries.
+
+# Goal
+The goal of this classification prediction project is to create a machine learning model that can achieve a `roc_auc` score above 0.583.
+
+# Initial Exploration
+After skimming the data and performing an initial exploration, I discovered that there was data missing in both the training and testing sets. The training data had a total number of 34,729 missing values, and the testing data had 31,004 missing values. The variables missing had a missingness percentage of 17%. Knowing this, I stratified my y variable and split my data using .75 as the proportion. 
+
+## Summary of Missingness
+```{r}
+# load packages
+library(tidyverse)
+library(tidymodels)
+library(naniar)
+library(ggpubr)
+
+
+test <- read_csv("data/raw/test.csv")
+train <- read_csv("data/raw/train.csv")
+
+# set seed
+set.seed(1234)
+
+# skim for missingness
+miss_var_summary(train)
+miss_var_summary(test)
+```
+
+## Distribution of Outcome Variable
+```{r}
+# exploration
+train %>%
+  mutate(y_category = cut(y, breaks = c(-Inf, 0, Inf), labels = c("0", "1"))) %>%
+  ggplot(mapping = aes(x = y_category)) +
+  geom_bar(fill = "blue") +
+  geom_text(stat = "Count", aes(label = after_stat(count)), vjust = -0.5) +
+  labs(x = "Y Variable") +
+  theme_minimal()
+
+```
+
+## Addressing Missingness
+To remedy the missingness in the dataset, I created an empty list and filled it with all the missing values, turned it into a tibble, and omitted it from the dataset.
+
+
+# Lasso Variable Selection
+I used a lasso model for variable selection. After creating the model, I tidied it and used the `filter()` function to separate the variables for the fitted models.
+
+# Recipe Building
+
+## Kitchen Sink Recipe
+I chose to use a kitchen sink recipe to evaluate the target variable using all of the predictor variables,
+
+## Lasso Recipe
+I created a separate recipe created from the variables I selected with the lasso model that I completed prior. I used `step_nzv()`, `step_normalize()`, `step_imput_mean()`, and `step_corr()` to complete this recipe. 
+
+# Resampling Technique
+For resampling, I used a v-fold cross-validation technique with 10 folds and 5 repeats. 
+
+# Models Used
+
+## Mars Model
+The final model I used for my prediction was a mars model. I found this model to be the most proficient in achieving a high `roc_auc` score. 
+
+# Tuning Parameters
+The tuning parameters I used for my mars model were `num_terms` and `prod_degree`. 
+
+# Model Results
+The mars model was able to produce a `roc_auc` score above 0.583, which means it was the most successful model, which completed the original goal of the lab. 
+```{r}
+library(knitr)
+
+knitr::include_graphics("metric_results/class_roc_auc.png")
+```
+
+
+# Conclusion
+In conclusion, I was able to produce a model with a `roc_auc` greater than 0.583. Although it took a few different tries with a few different models, The mars model ended up performing quite well and it was a great way for me to apply many of the concepts that we've been exploring in class. 
